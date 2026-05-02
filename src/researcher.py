@@ -1,11 +1,6 @@
-import time
 from dataclasses import dataclass, field
 from google.genai import types
-from google.genai.errors import ServerError
-from .gemini_client import get_client, get_model
-
-MAX_RETRIES = 3
-RETRY_DELAY = 3
+from .gemini_client import generate
 
 SYSTEM_PROMPT = """You are a Researcher Agent. Your sole job is to find accurate, \
 current information on the given query using web search.
@@ -27,26 +22,12 @@ class ResearchResult:
 
 
 def research(query: str) -> ResearchResult:
-    client = get_client()
-
     config = types.GenerateContentConfig(
         system_instruction=SYSTEM_PROMPT,
         tools=[types.Tool(google_search=types.GoogleSearch())],
     )
 
-    response = None
-    for attempt in range(1, MAX_RETRIES + 1):
-        try:
-            response = client.models.generate_content(
-                model=get_model(),
-                contents=query,
-                config=config,
-            )
-            break
-        except ServerError:
-            if attempt == MAX_RETRIES:
-                raise
-            time.sleep(RETRY_DELAY * attempt)
+    response = generate(query, config)
 
     answer = response.text or ""
     sources: list[str] = []

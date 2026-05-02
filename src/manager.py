@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass
 from google.genai import types
-from .gemini_client import get_client, get_model
+from .gemini_client import generate
 from .researcher import ResearchResult
 
 
@@ -78,21 +78,14 @@ class EvaluationResult:
 
 
 def delegate(sub_question: str) -> str:
-    client = get_client()
     config = types.GenerateContentConfig(
         system_instruction=DELEGATE_PROMPT,
     )
-    response = client.models.generate_content(
-        model=get_model(),
-        contents=sub_question,
-        config=config,
-    )
+    response = generate(sub_question, config)
     return (response.text or sub_question).strip()
 
 
 def evaluate(sub_question: str, result: ResearchResult, iteration: int) -> EvaluationResult:
-    client = get_client()
-
     sources_text = "\n".join(result.sources) if result.sources else "None"
     queries_text = "\n".join(result.search_queries_used) if result.search_queries_used else "None"
 
@@ -113,11 +106,7 @@ Iteration number: {iteration}"""
         system_instruction=EVALUATE_PROMPT,
         response_mime_type="application/json",
     )
-    response = client.models.generate_content(
-        model=get_model(),
-        contents=user_message,
-        config=config,
-    )
+    response = generate(user_message, config)
 
     try:
         data = json.loads(response.text or "{}")

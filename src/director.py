@@ -1,6 +1,6 @@
 import json
 from google.genai import types
-from .gemini_client import get_client, get_model
+from .gemini_client import generate
 from .researcher import ResearchResult
 
 
@@ -22,16 +22,11 @@ Rules:
 
 
 def plan(prompt: str) -> list[str]:
-    client = get_client()
     config = types.GenerateContentConfig(
         system_instruction=PLAN_PROMPT,
         response_mime_type="application/json",
     )
-    response = client.models.generate_content(
-        model=get_model(),
-        contents=prompt,
-        config=config,
-    )
+    response = generate(prompt, config)
     try:
         sub_questions = json.loads(response.text or "[]")
     except json.JSONDecodeError:
@@ -42,8 +37,6 @@ def plan(prompt: str) -> list[str]:
 
 
 def synthesize(original_prompt: str, results: list[ResearchResult]) -> str:
-    client = get_client()
-
     research_text = ""
     for i, result in enumerate(results, 1):
         sources_text = "\n".join(f"  - {s}" for s in result.sources) if result.sources else "  - None"
@@ -54,9 +47,5 @@ def synthesize(original_prompt: str, results: list[ResearchResult]) -> str:
     config = types.GenerateContentConfig(
         system_instruction=SYNTHESIZE_PROMPT,
     )
-    response = client.models.generate_content(
-        model=get_model(),
-        contents=user_message,
-        config=config,
-    )
+    response = generate(user_message, config)
     return response.text or ""
