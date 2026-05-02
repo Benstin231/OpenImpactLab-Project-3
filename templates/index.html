@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OpenImpactLab — Research System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="logo-mark"></span>
+      <span class="logo-text">OPENIMPACTLAB</span>
+      <span class="logo-sub">/ RESEARCH SYSTEM v3</span>
+    </div>
+    <div class="topbar-right">
+      <button class="help-btn" id="help-btn" aria-label="Help">?</button>
+      <span class="status-dot" id="status-dot"></span>
+      <span class="status-label" id="status-label">IDLE</span>
+    </div>
+  </header>
+
+  <!-- Three-column agent area -->
+  <main class="channels" id="channels">
+
+    <div class="channel channel--director" id="ch-director">
+      <div class="channel-header">
+        <div class="channel-indicator"></div>
+        <span class="channel-name">DIRECTOR</span>
+        <span class="channel-role">Strategy &amp; Synthesis</span>
+        <span class="channel-pulse" id="pulse-director"></span>
+      </div>
+      <div class="channel-feed" id="feed-director">
+        <div class="channel-empty">Awaiting mission brief...</div>
+      </div>
+    </div>
+
+    <div class="channel-divider"></div>
+
+    <div class="channel channel--manager" id="ch-manager">
+      <div class="channel-header">
+        <div class="channel-indicator"></div>
+        <span class="channel-name">MANAGER</span>
+        <span class="channel-role">Delegation &amp; QA</span>
+        <span class="channel-pulse" id="pulse-manager"></span>
+      </div>
+      <div class="channel-feed" id="feed-manager">
+        <div class="channel-empty">Standing by...</div>
+      </div>
+    </div>
+
+    <div class="channel-divider"></div>
+
+    <div class="channel channel--researcher" id="ch-researcher">
+      <div class="channel-header">
+        <div class="channel-indicator"></div>
+        <span class="channel-name">RESEARCHER</span>
+        <span class="channel-role">Field Intelligence</span>
+        <span class="channel-pulse" id="pulse-researcher"></span>
+      </div>
+      <div class="channel-feed" id="feed-researcher">
+        <div class="channel-empty">Sensors offline...</div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Final answer overlay -->
+  <div class="answer-overlay" id="answer-overlay" style="display:none">
+    <div class="answer-card">
+      <div class="answer-header">
+        <span class="answer-label">FINAL SYNTHESIS</span>
+        <button class="answer-close" id="answer-close">✕</button>
+      </div>
+      <div class="answer-body" id="answer-body"></div>
+      <div class="answer-sources" id="answer-sources"></div>
+    </div>
+  </div>
+
+  <!-- Help modal -->
+  <div class="modal-overlay" id="help-overlay" style="display:none">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span class="modal-title">使用說明</span>
+        <button class="answer-close" id="help-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <section class="help-section">
+          <h3>How to Use</h3>
+          <ol>
+            <li>Type your research question in the input bar at the bottom and press <kbd>Enter</kbd> or click the send button.</li>
+            <li>Three AI agents will automatically collaborate to research your question.</li>
+            <li>When research is complete, the final answer appears in a popup. A clickable link also appears in the Director column.</li>
+            <li>To cancel an ongoing query, click the <kbd>⏹</kbd> stop button.</li>
+            <li>Press <kbd>Shift + Enter</kbd> to add a new line in the input box.</li>
+          </ol>
+        </section>
+
+        <section class="help-section">
+          <h3>Agent Roles</h3>
+          <div class="agent-table">
+            <div class="agent-row agent-row--director">
+              <span class="agent-tag">DIRECTOR</span>
+              <span>Breaks the question into 2–4 sub-questions and synthesizes all research results into a final comprehensive answer.</span>
+            </div>
+            <div class="agent-row agent-row--manager">
+              <span class="agent-tag">MANAGER</span>
+              <span>Generates an optimized search query for each sub-question and performs quality review on the Researcher's responses.</span>
+            </div>
+            <div class="agent-row agent-row--researcher">
+              <span class="agent-tag">RESEARCHER</span>
+              <span>Executes web searches via Google Search Grounding and returns grounded responses with cited sources.</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="help-section">
+          <h3>Manager Score Legend</h3>
+          <p class="help-subtitle">Score format: <code>APPROVED / REJECTED  A:n  C:n  R:n  Q:n</code></p>
+          <div class="score-table">
+            <div class="score-row">
+              <span class="score-key">A</span>
+              <span class="score-name">Accuracy</span>
+              <span class="score-desc">Are the factual claims correct and free of hallucinations? Is the content grounded in real sources?</span>
+            </div>
+            <div class="score-row">
+              <span class="score-key">C</span>
+              <span class="score-name">Completeness</span>
+              <span class="score-desc">Does the answer cover all key aspects of the sub-question? Are any important details missing?</span>
+            </div>
+            <div class="score-row">
+              <span class="score-key">R</span>
+              <span class="score-name">Relevance</span>
+              <span class="score-desc">Is the answer focused on what was asked? Does it stay on topic without unnecessary padding?</span>
+            </div>
+            <div class="score-row">
+              <span class="score-key">Q</span>
+              <span class="score-name">Citation Quality</span>
+              <span class="score-desc">Were multiple web searches performed and sources returned? Note: URL format (redirect vs. direct) does not affect this score.</span>
+            </div>
+          </div>
+          <p class="help-note">All four scores must reach 4 or above to be approved. After the 3rd iteration the response is approved regardless of scores.</p>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom input bar -->
+  <footer class="input-dock">
+    <form class="input-shell" id="research-form">
+      <div class="input-wrap">
+        <textarea
+          id="prompt-input"
+          placeholder="Enter your research question..."
+          rows="1"
+          maxlength="2000"
+        ></textarea>
+        <button type="button" id="stop-btn" class="stop-btn" aria-label="Stop" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="4" y="4" width="16" height="16" rx="2"/>
+          </svg>
+        </button>
+        <button type="submit" id="submit-btn" aria-label="Submit">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+      <div class="input-meta">
+        <span id="char-count">0 / 2000</span>
+        <span id="error-msg" class="error-msg"></span>
+      </div>
+    </form>
+  </footer>
+
+  <script>
+    // ── DOM refs ──────────────────────────────────────────────────
+    const form        = document.getElementById('research-form');
+    const promptInput = document.getElementById('prompt-input');
+    const submitBtn   = document.getElementById('submit-btn');
+    const stopBtn     = document.getElementById('stop-btn');
+    const charCount   = document.getElementById('char-count');
+    const errorMsg    = document.getElementById('error-msg');
+    const statusDot   = document.getElementById('status-dot');
+    const statusLabel = document.getElementById('status-label');
+
+    const feeds = {
+      director:   document.getElementById('feed-director'),
+      manager:    document.getElementById('feed-manager'),
+      researcher: document.getElementById('feed-researcher'),
+    };
+    const pulses = {
+      director:   document.getElementById('pulse-director'),
+      manager:    document.getElementById('pulse-manager'),
+      researcher: document.getElementById('pulse-researcher'),
+    };
+
+    // Answer overlay
+    const answerOverlay = document.getElementById('answer-overlay');
+    const answerBody    = document.getElementById('answer-body');
+    const answerSources = document.getElementById('answer-sources');
+    document.getElementById('answer-close').addEventListener('click', () => {
+      answerOverlay.style.display = 'none';
+    });
+
+    // Help modal
+    const helpOverlay = document.getElementById('help-overlay');
+    document.getElementById('help-btn').addEventListener('click', () => {
+      helpOverlay.style.display = 'flex';
+    });
+    document.getElementById('help-close').addEventListener('click', () => {
+      helpOverlay.style.display = 'none';
+    });
+    helpOverlay.addEventListener('click', (e) => {
+      if (e.target === helpOverlay) helpOverlay.style.display = 'none';
+    });
+
+    let activeSource = null;
+    let isResearching = false;
+
+    // ── Stop button ───────────────────────────────────────────────
+    stopBtn.addEventListener('click', () => {
+      if (activeSource) { activeSource.close(); activeSource = null; }
+      isResearching = false;
+      setResearchingState(false);
+      appendMsg('director', 'error', ['Research stopped by user.']);
+      setStatus('idle');
+    });
+
+    function setResearchingState(active) {
+      isResearching = active;
+      submitBtn.disabled = active;
+      submitBtn.style.display = active ? 'none' : 'flex';
+      stopBtn.style.display   = active ? 'flex' : 'none';
+      submitBtn.classList.toggle('btn--loading', active);
+    }
+
+    // ── Auto-resize textarea ──────────────────────────────────────
+    promptInput.addEventListener('input', () => {
+      promptInput.style.height = 'auto';
+      promptInput.style.height = Math.min(promptInput.scrollHeight, 160) + 'px';
+      charCount.textContent = `${promptInput.value.length} / 2000`;
+    });
+
+    promptInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (!isResearching) form.dispatchEvent(new Event('submit'));
+      }
+    });
+
+    // ── Utilities ─────────────────────────────────────────────────
+    function setStatus(state) {
+      statusDot.className = 'status-dot status-dot--' + state;
+      statusLabel.textContent = { idle: 'IDLE', active: 'ACTIVE', error: 'ERROR' }[state] || state.toUpperCase();
+    }
+
+    function setPulse(agent, active) {
+      if (!pulses[agent]) return;
+      pulses[agent].className = 'channel-pulse' + (active ? ' channel-pulse--on' : '');
+    }
+
+    function clearFeeds() {
+      Object.values(feeds).forEach(f => { f.innerHTML = ''; });
+      ['director','manager','researcher'].forEach(a => setPulse(a, false));
+    }
+
+    function appendMsg(feedKey, type, lines) {
+      const feed = feeds[feedKey];
+      if (!feed) return;
+      const empty = feed.querySelector('.channel-empty');
+      if (empty) empty.remove();
+
+      const msg = document.createElement('div');
+      msg.className = `msg msg--${type}`;
+
+      const ts = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const tsEl = document.createElement('span');
+      tsEl.className = 'msg-ts';
+      tsEl.textContent = ts;
+      msg.appendChild(tsEl);
+
+      lines.forEach(line => {
+        const p = document.createElement('p');
+        p.textContent = line;
+        msg.appendChild(p);
+      });
+
+      feed.appendChild(msg);
+      feed.scrollTop = feed.scrollHeight;
+      return msg;
+    }
+
+    // ── Score label mapping ───────────────────────────────────────
+    const SCORE_KEYS = { accuracy: 'A', completeness: 'C', relevance: 'R', citation_quality: 'Q' };
+
+    function formatScores(scores) {
+      return Object.entries(SCORE_KEYS)
+        .map(([key, label]) => scores[key] !== undefined ? `${label}:${scores[key]}` : '')
+        .filter(Boolean).join('  ');
+    }
+
+    // ── Event routing ─────────────────────────────────────────────
+    function handleEvent(ev) {
+      const type = ev.event_type;
+      const d    = ev.data;
+
+      setPulse('director', false);
+      setPulse('manager', false);
+      setPulse('researcher', false);
+
+      if (type === 'planning') {
+        setPulse('director', true);
+        if (d.sub_questions) {
+          appendMsg('director', 'info', [
+            `Research plan (${d.count} sub-questions):`,
+            ...d.sub_questions.map((q, i) => `${i + 1}. ${q}`)
+          ]);
+        } else {
+          appendMsg('director', 'info', [d.message || 'Planning...']);
+        }
+
+      } else if (type === 'delegation') {
+        setPulse('manager', true);
+        if (d.search_query) {
+          appendMsg('manager', 'query', [`→ Query: "${d.search_query}"`]);
+        } else {
+          appendMsg('manager', 'info', [
+            `Sub-question ${d.index}/${d.total}:`,
+            d.sub_question
+          ]);
+        }
+
+      } else if (type === 'research_start') {
+        setPulse('researcher', true);
+        appendMsg('researcher', 'info', [
+          `[iter ${d.iteration}] Searching:`,
+          `"${d.query}"`
+        ]);
+
+      } else if (type === 'research_result') {
+        setPulse('researcher', true);
+        const srcCount = (d.sources || []).length;
+        appendMsg('researcher', 'result', [
+          `[iter ${d.iteration}] Retrieved ${srcCount} source${srcCount !== 1 ? 's' : ''}`,
+          ...(d.search_queries_used || []).map(q => `↳ ${q}`)
+        ]);
+
+      } else if (type === 'evaluation') {
+        setPulse('manager', true);
+        const scoreStr = formatScores(d.scores || {});
+        if (d.approved) {
+          appendMsg('manager', 'approved', [`[iter ${d.iteration}] APPROVED  ${scoreStr}`]);
+        } else {
+          appendMsg('manager', 'rejected', [
+            `[iter ${d.iteration}] REJECTED  ${scoreStr}`,
+            d.critique
+          ]);
+        }
+
+      } else if (type === 'approved') {
+        appendMsg('manager', 'approved', [
+          `Sub-question ${d.sub_question_index} resolved in ${d.final_iteration} iteration(s)`
+        ]);
+
+      } else if (type === 'rejected') {
+        appendMsg('manager', 'rejected', [`Follow-up: "${d.follow_up_query}"`]);
+
+      } else if (type === 'synthesis_start') {
+        setPulse('director', true);
+        appendMsg('director', 'info', ['Synthesizing final answer...']);
+
+      } else if (type === 'done') {
+        ['director','manager','researcher'].forEach(a => setPulse(a, false));
+        setStatus('idle');
+        setResearchingState(false);
+
+        if (d.answer) {
+          const msg = appendMsg('director', 'final', ['✦ Final synthesis ready — click to view']);
+          if (msg) msg.addEventListener('click', () => showAnswer(d.answer, d.sources || []));
+          showAnswer(d.answer, d.sources || []);
+        }
+
+        if (activeSource) { activeSource.close(); activeSource = null; }
+
+      } else if (type === 'error') {
+        appendMsg('director', 'error', ['ERROR: ' + (d.message || 'Unknown error')]);
+        setStatus('error');
+        setResearchingState(false);
+      }
+    }
+
+    function showAnswer(answer, sources) {
+      answerBody.textContent = answer;
+      if (sources && sources.length) {
+        answerSources.innerHTML = '<p class="sources-title">SOURCES</p>' +
+          sources.map(s => `<a href="${s}" target="_blank" rel="noopener">${s}</a>`).join('');
+      } else {
+        answerSources.innerHTML = '';
+      }
+      answerOverlay.style.display = 'flex';
+    }
+
+    // ── Form submit ───────────────────────────────────────────────
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (isResearching) return;
+      const prompt = promptInput.value.trim();
+      if (!prompt) return;
+
+      if (activeSource) { activeSource.close(); activeSource = null; }
+
+      clearFeeds();
+      answerOverlay.style.display = 'none';
+      errorMsg.textContent = '';
+
+      // Clear input immediately after submission
+      promptInput.value = '';
+      promptInput.style.height = 'auto';
+      charCount.textContent = '0 / 2000';
+
+      setResearchingState(true);
+      setStatus('active');
+
+      try {
+        const res = await fetch('/research', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          errorMsg.textContent = err.error || 'Failed to start research';
+          setResearchingState(false);
+          setStatus('error');
+          return;
+        }
+        const { request_id } = await res.json();
+
+        const es = new EventSource(`/stream/${request_id}`);
+        activeSource = es;
+
+        es.onmessage = (msg) => {
+          try { handleEvent(JSON.parse(msg.data)); } catch (_) {}
+        };
+        es.onerror = () => {
+          if (!isResearching) return;
+          errorMsg.textContent = 'Connection lost';
+          es.close(); activeSource = null;
+          setResearchingState(false);
+          setStatus('error');
+        };
+      } catch (err) {
+        errorMsg.textContent = err.message;
+        setResearchingState(false);
+        setStatus('error');
+      }
+    });
+  </script>
+</body>
+</html>
